@@ -103,6 +103,12 @@ if errors.As(err, &ve) {
 
 Error messages never include passwords, PINs, or full sensitive secrets.
 
+## Result helper
+
+Package `validate` exposes an optional `Result` value object. Prefer ordinary
+`error` returns from leaf validators. `Fail(nil)` is normalized to an
+`invalid_format` error so `Valid=false` never pairs with a nil `Err`.
+
 ## Dependency policy
 
 - Prefer the Go standard library.
