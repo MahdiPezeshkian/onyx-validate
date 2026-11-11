@@ -1,5 +1,6 @@
-// Package validate provides reusable reflection-based validation helpers.
-package validate
+// Package legacy preserves the original reflection-based helpers from onyx-validate v0.1.0.
+// Prefer the modular packages under this module for new code.
+package legacy
 
 import (
 	"fmt"

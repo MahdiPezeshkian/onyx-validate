@@ -3,60 +3,125 @@
 [![Go Version](https://img.shields.io/badge/go-1.27-00ADD8.svg)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Reusable reflection-based validation helpers. Extracted from
-`Onyx.Common/validation`.
+A modular Go validation toolkit for Iranian and international data.
+
+Import only the packages you need. Validation, normalization, formatting, and
+lookup are separate concerns. Online verification is out of scope.
 
 ## Installation
 
 ```bash
-go get github.com/MahdiPezeshkian/onyx-validate@v0.1.0
+go get github.com/MahdiPezeshkian/onyx-validate@latest
 ```
 
-## Import path
+Module path: `github.com/MahdiPezeshkian/onyx-validate`
+
+## Quick start
 
 ```go
-import "github.com/MahdiPezeshkian/onyx-validate"
+import (
+    "github.com/MahdiPezeshkian/onyx-validate/iran/identity/nationalid"
+    "github.com/MahdiPezeshkian/onyx-validate/normalize"
+    "github.com/MahdiPezeshkian/onyx-validate/validate"
+)
+
+func check(id string) error {
+    // Explicit normalization when you want ASCII digits:
+    _ = normalize.Digits(id)
+
+    if err := nationalid.Validate(id); err != nil {
+        var ve *validate.ValidationError
+        if errors.As(err, &ve) {
+            // Prefer ve.Code over ve.Message.
+            return err
+        }
+        return err
+    }
+    return nil
+}
 ```
 
-Package name: `validate`
+## API conventions
 
-## Basic usage
+Most validators expose:
+
+- `IsValid(value string) bool`
+- `Validate(value string) error`
+
+Parameterized validators take options or extra arguments:
 
 ```go
-if err := validate.ValidateNotEmpty(email, password); err != nil {
-	return err
-}
-if err := validate.ValidateEmail(email); err != nil {
-	return err
-}
-return validate.ValidateRange(18, 120, age)
+username.Validate(name, username.DefaultOptions())
+age.ValidateMin(birth, referenceDate, 18)
 ```
 
-## Public API overview
+Shared errors live in package `validate` and support `errors.As` / `errors.Is`
+by stable machine-readable codes.
 
-| API | Purpose |
-|---|---|
-| `ValidateNotEmpty` | Reject zero/empty values |
-| `ValidateNonNegative` / `ValidatePositive` | Numeric sign checks |
-| `ValidateMin` / `ValidateMax` / `ValidateRange` | Numeric bounds |
-| `ValidateLength` | Exact length for string/slice/array/map |
-| `ValidateEmail` | Lightweight email shape check (`@` and `.`) |
+## Package map
 
-## Design decisions
+| Area | Import path prefix | Notes |
+|---|---|---|
+| Shared errors | `.../validate` | Codes + `ValidationError` |
+| Normalization | `.../normalize` | Digits, whitespace, separators |
+| Iranian identity | `.../iran/identity/...` | National ID, legal ID, passport |
+| Iranian banking | `.../iran/banking/...` | Card, Sheba, bank lookup |
+| Iranian contact | `.../iran/contact/...` | Mobile, landline, dispatcher |
+| Iranian address | `.../iran/address/postalcode` | 10-digit structural |
+| Iranian vehicle | `.../iran/vehicle/...` | Plate, VIN, engine |
+| International banking | `.../banking/...` | Card (Luhn), IBAN, BIC |
+| International contact | `.../contact/...` | Email, E.164 phone |
+| Identifiers | `.../identity/...` | UUID, ULID, username |
+| Network | `.../network/...` | IP, CIDR, hostname, domain, MAC, port |
+| Text | `.../text/...` | Length, charset, format, pattern |
+| Finance | `.../finance/...` | Amount, currency, percentage |
+| Date/time | `.../datetime/...` | Date, range, age, Persian calendar |
+| Security | `.../security/...` | Password policy, PIN |
+| File | `.../file/...` | Extension, MIME, filename, size |
+| Legacy | `.../legacy` | Original v0.1.0 reflection helpers |
 
-- Independent of HTTP frameworks and application models.
-- Uses reflection for flexible variadic helpers, matching the original package.
-- Email validation is intentionally simple (not RFC 5322).
+## Normalization policy
 
-## Dependencies
+- Validators never mutate caller-owned strings.
+- Persian and Arabic-Indic digits may be accepted by Iranian validators after
+  an **internal copy** conversion; each package documents its policy.
+- Use `normalize.Digits`, `normalize.TrimSpace`, etc. when you need explicit
+  transformation of your own values.
 
-None beyond the Go standard library.
+## Error handling
+
+```go
+err := nationalid.Validate(input)
+var ve *validate.ValidationError
+if errors.As(err, &ve) {
+    switch ve.Code {
+    case validate.CodeRequired:
+    case validate.CodeInvalidChecksum:
+    }
+}
+```
+
+Error messages never include passwords, PINs, or full sensitive secrets.
+
+## Dependency policy
+
+- Prefer the Go standard library.
+- No web frameworks, databases, or `onyx-errors`.
+- No network I/O in ordinary validators.
+- Current direct dependencies: **none** beyond the Go standard library.
 
 ## Limitations
 
-- Not a struct-tag validation framework.
-- Email checks are heuristic.
-- No localization of error messages.
+- Structural validity ≠ real-world existence, ownership, or activation.
+- Bank BIN / bank-code / currency / IBAN-country datasets are **partial** and
+  documented with sources and update dates.
+- Iranian account-number validation is deferred (no shared bank algorithm).
+- International phone validation is E.164 structural only (no numbering-plan
+  metadata library).
+- Email validation is pragmatic, not full RFC 5322 / IDNA.
+- Vehicle free-zone / diplomatic plates are deferred.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) and [ROADMAP.md](ROADMAP.md).
 
 ## License
 
