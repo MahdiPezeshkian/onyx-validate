@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `validate.Fail(nil)` no longer produces Valid=false with a nil Err.
+
+
 ### Added
 
 - Modular package architecture for Iranian and international validators.
